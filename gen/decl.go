@@ -78,6 +78,7 @@ func (g *generator) structure(s *ast.Struct) {
 	g.structDecl(s)
 	g.parse(s)
 	g.parseConstructor(s)
+	g.marshalBinary(s)
 
 	g.receiver = ""
 }
@@ -375,4 +376,242 @@ func contextArgs(names []string) string {
 
 func unexpected(t interface{}) string {
 	return fmt.Sprintf("unexpected type %T", t)
+}
+
+// marshalBinary generates a MarshalBinary method for the type.
+func (g *generator) marshalBinary(s *ast.Struct) {
+	// Generate internal encoding method without validation
+	g.printf("func (%s *%s) encodeBinary() []byte {\n", g.receiver, name(s.Name))
+	g.printf("var buf []byte\n")
+	g.data = "buf"
+	for _, m := range s.Members {
+		g.encodeMember(m)
+	}
+	g.printf("return %s\n}\n\n", g.data)
+	g.data = ""
+
+	// Generate public MarshalBinary method with validation
+	g.printf("func (%s *%s) MarshalBinary() ([]byte, error) {\n", g.receiver, name(s.Name))
+	g.printf("if err := %s.validate(); err != nil {\n", g.receiver)
+	g.printf("return nil, err\n")
+	g.printf("}\n")
+	g.printf("return %s.encodeBinary(), nil\n", g.receiver)
+	g.printf("}\n\n")
+
+	// Generate validation method
+	g.validate(s)
+}
+
+func (g *generator) encodeMember(m ast.Member) {
+	switch m := m.(type) {
+	case *ast.Field:
+		rhs := g.receiver + "." + name(m.Name)
+		g.encodeType(rhs, m.Type)
+
+	case *ast.UnionMember:
+		g.encodeUnionMember(m)
+
+	case *ast.EOS:
+		// nothing to encode
+
+	case *ast.Ignore:
+		// nothing to encode
+
+	case *ast.Fail:
+		// nothing to encode
+
+	default:
+		panic(unexpected(m))
+	}
+}
+
+func (g *generator) encodeType(rhs string, t ast.Type) {
+	switch t := t.(type) {
+	case *ast.NulTermString:
+		g.printf("%s = append(%s, []byte(%s)...)\n", g.data, g.data, rhs)
+		g.printf("%s = append(%s, 0)\n", g.data, g.data)
+
+	case *ast.IntType:
+		g.encodeIntType(rhs, t)
+
+	case *ast.CharType:
+		g.encodeType(rhs, ast.U8)
+
+	case *ast.Ptr:
+		// Pointers are computed during parsing, not encoded
+		// nothing to encode
+
+	case *ast.StructRef:
+		g.printf("%s = append(%s, %s.encodeBinary()...)\n", g.data, g.data, rhs)
+
+	case *ast.FixedArrayMember:
+		g.encodeArray(rhs, t.Base, t.Size)
+
+	case *ast.VarArrayMember:
+		g.encodeArray(rhs, t.Base, t.Constraint)
+
+	default:
+		panic(unexpected(t))
+	}
+}
+
+func (g *generator) encodeIntType(rhs string, t *ast.IntType) {
+	n := t.Size / 8
+	if n == 1 {
+		g.printf("%s = append(%s, byte(%s))\n", g.data, g.data, rhs)
+	} else {
+		g.printf("{\n")
+		g.printf("tmp := make([]byte, %d)\n", n)
+		g.printf("binary.BigEndian.PutUint%d(tmp, %s)\n", t.Size, rhs)
+		g.printf("%s = append(%s, tmp...)\n", g.data, g.data)
+		g.printf("}\n")
+	}
+}
+
+func (g *generator) encodeArray(rhs string, base ast.Type, s ast.LengthConstraint) {
+	switch s := s.(type) {
+	case *ast.IntegerConstRef, *ast.IntegerLiteral:
+		g.printf("for idx := 0; idx < %s; idx++ {\n", g.integer(s))
+		g.encodeType(rhs+"[idx]", base)
+		g.printf("}\n")
+
+	case *ast.IDRef:
+		size := fmt.Sprintf("int(%s)", g.ref(s))
+		g.printf("for idx := 0; idx < %s; idx++ {\n", size)
+		g.encodeType(rhs+"[idx]", base)
+		g.printf("}\n")
+
+	case *ast.Leftover:
+		// For leftover arrays, encode all elements
+		g.printf("for idx := 0; idx < len(%s); idx++ {\n", rhs)
+		g.encodeType(rhs+"[idx]", base)
+		g.printf("}\n")
+
+	case nil:
+		// Variable length array - encode all elements
+		g.printf("for idx := 0; idx < len(%s); idx++ {\n", rhs)
+		g.encodeType(rhs+"[idx]", base)
+		g.printf("}\n")
+
+	default:
+		panic(unexpected(s))
+	}
+}
+
+func (g *generator) encodeUnionMember(u *ast.UnionMember) {
+	tag := g.ref(u.Tag)
+	g.printf("switch {\n")
+	for _, c := range u.Cases {
+		if c.Case == nil {
+			g.printf("default:\n")
+		} else {
+			g.printf("case %s:\n", g.conditional(tag, c.Case))
+		}
+		for _, m := range c.Members {
+			g.encodeMember(m)
+		}
+	}
+	g.printf("}\n")
+}
+
+func (g *generator) validate(s *ast.Struct) {
+	g.printf("func (%s *%s) validate() error {\n", g.receiver, name(s.Name))
+	for _, m := range s.Members {
+		g.validateMember(m)
+	}
+	g.printf("return nil\n}\n\n")
+}
+
+func (g *generator) validateMember(m ast.Member) {
+	switch m := m.(type) {
+	case *ast.Field:
+		rhs := g.receiver + "." + name(m.Name)
+		g.validateType(rhs, m.Type)
+
+	case *ast.UnionMember:
+		g.validateUnionMember(m)
+
+	case *ast.EOS, *ast.Ignore, *ast.Fail:
+		// nothing to validate
+
+	default:
+		panic(unexpected(m))
+	}
+}
+
+func (g *generator) validateType(rhs string, t ast.Type) {
+	switch t := t.(type) {
+	case *ast.IntType:
+		g.validateIntType(rhs, t)
+
+	case *ast.StructRef:
+		g.printf("if %s != nil {\n", rhs)
+		g.printf("if err := %s.validate(); err != nil {\n", rhs)
+		g.printf("return err\n")
+		g.printf("}\n")
+		g.printf("}\n")
+
+	case *ast.FixedArrayMember:
+		g.validateArray(rhs, t.Base, t.Size)
+
+	case *ast.VarArrayMember:
+		g.validateArray(rhs, t.Base, t.Constraint)
+
+	case *ast.NulTermString, *ast.CharType, *ast.Ptr:
+		// No validation needed for these types
+
+	default:
+		panic(unexpected(t))
+	}
+}
+
+func (g *generator) validateIntType(rhs string, t *ast.IntType) {
+	if t.Constraint != nil {
+		g.printf("if !(%s) {\n", g.conditional(rhs, t.Constraint))
+		g.printf("return errors.New(\"integer constraint violated\")\n")
+		g.printf("}\n")
+	}
+}
+
+func (g *generator) validateArray(rhs string, base ast.Type, s ast.LengthConstraint) {
+	switch s := s.(type) {
+	case *ast.IntegerConstRef, *ast.IntegerLiteral:
+		expectedSize := g.integer(s)
+		g.printf("if len(%s) != %s {\n", rhs, expectedSize)
+		g.printf("return errors.New(\"array length constraint violated\")\n")
+		g.printf("}\n")
+
+	case *ast.IDRef:
+		expectedSize := fmt.Sprintf("int(%s)", g.ref(s))
+		g.printf("if len(%s) != %s {\n", rhs, expectedSize)
+		g.printf("return errors.New(\"array length constraint violated\")\n")
+		g.printf("}\n")
+
+	case *ast.Leftover, nil:
+		// No length validation for leftover or variable arrays
+
+	default:
+		panic(unexpected(s))
+	}
+
+	// Validate array elements
+	g.printf("for idx := 0; idx < len(%s); idx++ {\n", rhs)
+	g.validateType(rhs+"[idx]", base)
+	g.printf("}\n")
+}
+
+func (g *generator) validateUnionMember(u *ast.UnionMember) {
+	tag := g.ref(u.Tag)
+	g.printf("switch {\n")
+	for _, c := range u.Cases {
+		if c.Case == nil {
+			g.printf("default:\n")
+		} else {
+			g.printf("case %s:\n", g.conditional(tag, c.Case))
+		}
+		for _, m := range c.Members {
+			g.validateMember(m)
+		}
+	}
+	g.printf("}\n")
 }
