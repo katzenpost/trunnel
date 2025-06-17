@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/internal/test"
-	"github.com/mmcloughlin/trunnel/parse"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/internal/test"
+	"github.com/katzenpost/trunnel/parse"
 )
 
 var update = flag.Bool("update", false, "update golden files")

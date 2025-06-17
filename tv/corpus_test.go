@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/internal/test"
+	"github.com/katzenpost/trunnel/internal/test"
 )
 
 func TestCorpusVectors(t *testing.T) {

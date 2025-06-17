@@ -1,4 +1,4 @@
-PKG = github.com/mmcloughlin/trunnel
+PKG = github.com/katzenpost/trunnel
 CMD = $(PKG)/cmd/trunnel
 GITSHA = `git rev-parse --short HEAD`
 LDFLAGS = "-X $(PKG)/meta.GitSHA=$(GITSHA)"

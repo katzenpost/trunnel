@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/internal/intervals"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/internal/intervals"
 )
 
 func TestStructs(t *testing.T) {

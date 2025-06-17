@@ -3,7 +3,7 @@ package tv
 import (
 	"github.com/pkg/errors"
 
-	"github.com/mmcloughlin/trunnel/ast"
+	"github.com/katzenpost/trunnel/ast"
 )
 
 // Constraints records fixed values for struct/context fields.

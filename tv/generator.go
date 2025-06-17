@@ -3,9 +3,9 @@ package tv
 import (
 	"github.com/mmcloughlin/random"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/fault"
-	"github.com/mmcloughlin/trunnel/inspect"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/fault"
+	"github.com/katzenpost/trunnel/inspect"
 )
 
 // Vector is a test vector.

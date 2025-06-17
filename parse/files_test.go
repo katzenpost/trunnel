@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mmcloughlin/trunnel/internal/test"
+	"github.com/katzenpost/trunnel/internal/test"
 )
 
 func TestValidFiles(t *testing.T) {

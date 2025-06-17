@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/inspect"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/inspect"
 )
 
 // Marshallers builds data marshallers for types in the given files.

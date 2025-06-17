@@ -1,6 +1,6 @@
 package gen
 
-import "github.com/mmcloughlin/trunnel/tv"
+import "github.com/katzenpost/trunnel/tv"
 
 // CorpusTests generates a test file based on a corpus of test vectors.
 func CorpusTests(pkg string, c *tv.Corpus) ([]byte, error) {

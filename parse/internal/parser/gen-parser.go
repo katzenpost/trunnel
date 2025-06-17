@@ -17,7 +17,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/mmcloughlin/trunnel/ast"
+	"github.com/katzenpost/trunnel/ast"
 )
 
 const lingeringDeclarationsKey = "lingering_declarations"

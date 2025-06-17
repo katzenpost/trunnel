@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/parse/internal/parser"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/parse/internal/parser"
 )
 
 //go:generate pigeon -o internal/parser/gen-parser.go trunnel.pigeon

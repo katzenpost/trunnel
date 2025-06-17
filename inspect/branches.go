@@ -1,8 +1,8 @@
 package inspect
 
 import (
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/internal/intervals"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/internal/intervals"
 )
 
 // Branch is a case of a union.

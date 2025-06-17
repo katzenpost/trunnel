@@ -15,6 +15,6 @@ script:
 - git status
 - test -z "$(git status --porcelain)"
 - make lint
-- overalls -project=github.com/mmcloughlin/trunnel -- -v -coverpkg=./... | grep -v
+- overalls -project=github.com/katzenpost/trunnel -- -v -coverpkg=./... | grep -v
   'no packages being tested depend on'
 - goveralls -coverprofile=overalls.coverprofile -service=travis-ci

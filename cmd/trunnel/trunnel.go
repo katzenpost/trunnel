@@ -6,9 +6,9 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/mmcloughlin/trunnel/gen"
-	"github.com/mmcloughlin/trunnel/meta"
-	"github.com/mmcloughlin/trunnel/parse"
+	"github.com/katzenpost/trunnel/gen"
+	"github.com/katzenpost/trunnel/meta"
+	"github.com/katzenpost/trunnel/parse"
 )
 
 func main() {
@@ -17,8 +17,8 @@ func main() {
 	app.Usage = "Code generator for binary parsing"
 	app.Version = meta.GitSHA
 
-	app.Commands = []*cli.Command{
-		build,
+	app.Commands = []cli.Command{
+		*build,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -35,22 +35,20 @@ var (
 		Usage:     "Generate go package from trunnel",
 		ArgsUsage: "<trunnelfile>...",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
+			cli.StringFlag{
 				Name:        "pkg",
-				Aliases:     []string{"p"},
 				Usage:       "package name",
 				Destination: &cfg.Package,
 			},
-			&cli.StringFlag{
+			cli.StringFlag{
 				Name:        "dir",
-				Aliases:     []string{"d"},
 				Usage:       "output directory",
 				Value:       ".",
 				Destination: &cfg.Dir,
 			},
 		},
 		Action: func(c *cli.Context) error {
-			filenames := c.Args().Slice()
+			filenames := c.Args()
 			if len(filenames) == 0 {
 				return cli.NewExitError("missing trunnel filenames", 1)
 			}

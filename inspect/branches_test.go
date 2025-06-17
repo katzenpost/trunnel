@@ -6,9 +6,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/internal/intervals"
-	"github.com/mmcloughlin/trunnel/parse"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/internal/intervals"
+	"github.com/katzenpost/trunnel/parse"
 )
 
 func TestNewBranchesNoDefault(t *testing.T) {

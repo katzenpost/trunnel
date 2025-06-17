@@ -3,10 +3,10 @@
 Code generator for binary parsing. Golang port of the [original implementation
 for the Tor project](https://gitweb.torproject.org/trunnel.git).
 
-[![go.dev Reference](https://img.shields.io/badge/doc-reference-007d9b?logo=go&style=flat-square)](https://pkg.go.dev/github.com/mmcloughlin/trunnel)
-[![Build status](https://img.shields.io/travis/mmcloughlin/trunnel.svg?style=flat-square)](https://travis-ci.org/mmcloughlin/trunnel)
-[![Coverage](https://img.shields.io/coveralls/mmcloughlin/trunnel.svg?style=flat-square)](https://coveralls.io/r/mmcloughlin/trunnel)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mmcloughlin/trunnel?style=flat-square)](https://goreportcard.com/report/github.com/mmcloughlin/trunnel)
+[![go.dev Reference](https://img.shields.io/badge/doc-reference-007d9b?logo=go&style=flat-square)](https://pkg.go.dev/github.com/katzenpost/trunnel)
+[![Build status](https://img.shields.io/travis/katzenpost/trunnel.svg?style=flat-square)](https://travis-ci.org/katzenpost/trunnel)
+[![Coverage](https://img.shields.io/coveralls/katzenpost/trunnel.svg?style=flat-square)](https://coveralls.io/r/katzenpost/trunnel)
+[![Go Report Card](https://goreportcard.com/badge/github.com/katzenpost/trunnel?style=flat-square)](https://goreportcard.com/report/github.com/katzenpost/trunnel)
 
 ## Description
 
@@ -21,7 +21,7 @@ designed](https://lists.torproject.org/pipermail/tor-dev/2014-August/007355.html
 and [implemented](https://gitweb.torproject.org/trunnel.git) by Nick Mathewson
 for the [Tor Project](https://www.torproject.org/). This Golang port is intended
 to support efforts to implement a [Tor Relay in
-Go](https://github.com/mmcloughlin/pearl), with the goal of sharing trunnel
+Go](https://github.com/katzenpost/pearl), with the goal of sharing trunnel
 files with the core Tor codebase.
 
 ## Quick Start
@@ -29,7 +29,7 @@ files with the core Tor codebase.
 Install `trunnel` with
 
 ```
-go get -u github.com/mmcloughlin/trunnel/cmd/trunnel
+go get -u github.com/katzenpost/trunnel/cmd/trunnel
 ```
 
 As a very simple example, we can define a color struct in trunnel as follows.

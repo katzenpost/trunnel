@@ -1,6 +1,6 @@
 package gen
 
-import "github.com/mmcloughlin/trunnel/tv"
+import "github.com/katzenpost/trunnel/tv"
 
 // Fuzzers generates fuzzing functions for the types in the corpus.
 func Fuzzers(pkg string, c *tv.Corpus) ([]byte, error) {

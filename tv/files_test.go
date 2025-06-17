@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/fault"
-	"github.com/mmcloughlin/trunnel/inspect"
-	"github.com/mmcloughlin/trunnel/internal/test"
-	"github.com/mmcloughlin/trunnel/parse"
+	"github.com/katzenpost/trunnel/fault"
+	"github.com/katzenpost/trunnel/inspect"
+	"github.com/katzenpost/trunnel/internal/test"
+	"github.com/katzenpost/trunnel/parse"
 )
 
 func TestFiles(t *testing.T) {

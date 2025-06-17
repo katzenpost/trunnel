@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/parse"
+	"github.com/katzenpost/trunnel/parse"
 )
 
 func String(code string) (*Corpus, error) {

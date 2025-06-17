@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mmcloughlin/trunnel/ast"
+	"github.com/katzenpost/trunnel/ast"
 )
 
 func TestEmpty(t *testing.T) {

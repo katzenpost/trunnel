@@ -4,9 +4,9 @@ package inspect
 import (
 	"errors"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/fault"
-	"github.com/mmcloughlin/trunnel/internal/intervals"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/fault"
+	"github.com/katzenpost/trunnel/internal/intervals"
 )
 
 // Structs builds a name to struct mapping for all structs in the file.

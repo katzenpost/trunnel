@@ -8,9 +8,9 @@ import (
 	"github.com/mmcloughlin/random"
 	"github.com/serenize/snaker"
 
-	"github.com/mmcloughlin/trunnel/ast"
-	"github.com/mmcloughlin/trunnel/fault"
-	"github.com/mmcloughlin/trunnel/tv"
+	"github.com/katzenpost/trunnel/ast"
+	"github.com/katzenpost/trunnel/fault"
+	"github.com/katzenpost/trunnel/tv"
 )
 
 // Config defines options for package generation.
