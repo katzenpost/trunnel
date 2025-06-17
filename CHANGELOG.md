@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prevents calling `encodeBinary()` on nil pointers in union types with embedded structs
   - Ensures only the active union member is encoded, fixing corpus test failures
   - Resolves incorrect serialization behavior for union types
+- **Corpus Generation Bug** - Disabled corpus generation for unions with struct references
+  - Corpus generation for complex union types was creating invalid test data
+  - Added detection for union cases containing struct references
+  - Returns `ErrNotImplemented` to skip corpus generation for problematic union types
+  - Functional encode/decode tests continue to work correctly
 
 ### Technical Details
 - **Big-endian encoding** consistent with trunnel specification
