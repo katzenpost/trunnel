@@ -442,7 +442,9 @@ func (g *generator) encodeType(rhs string, t ast.Type) {
 		// nothing to encode
 
 	case *ast.StructRef:
+		g.printf("if %s != nil {\n", rhs)
 		g.printf("%s = append(%s, %s.encodeBinary()...)\n", g.data, g.data, rhs)
+		g.printf("}\n")
 
 	case *ast.FixedArrayMember:
 		g.encodeArray(rhs, t.Base, t.Size)
