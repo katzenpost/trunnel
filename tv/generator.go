@@ -277,6 +277,16 @@ func (g *generator) union(u *ast.UnionMember) ([]Vector, error) {
 		return nil, err
 	}
 
+	// Check if any union case contains struct references
+	// Corpus generation for unions with struct references is not implemented
+	for _, branch := range branches.All() {
+		for _, member := range branch.Case.Members {
+			if hasStructRef(member) {
+				return nil, fault.ErrNotImplemented
+			}
+		}
+	}
+
 	// has the tag already been set?
 	options := branches.All()
 	t, ok := g.constraints.LookupRef(u.Tag)
@@ -380,6 +390,40 @@ func (g *generator) randnulterm(a, b int) []byte {
 		s[i] = alpha[g.rnd.Intn(len(alpha))]
 	}
 	return s
+}
+
+// hasStructRef checks if a member contains a struct reference
+func hasStructRef(member ast.Member) bool {
+	switch m := member.(type) {
+	case *ast.Field:
+		return hasStructRefInType(m.Type)
+	case *ast.UnionMember:
+		// Recursively check union members
+		for _, c := range m.Cases {
+			for _, subMember := range c.Members {
+				if hasStructRef(subMember) {
+					return true
+				}
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+// hasStructRefInType checks if a type contains a struct reference
+func hasStructRefInType(t ast.Type) bool {
+	switch typ := t.(type) {
+	case *ast.StructRef:
+		return true
+	case *ast.FixedArrayMember:
+		return hasStructRefInType(typ.Base)
+	case *ast.VarArrayMember:
+		return hasStructRefInType(typ.Base)
+	default:
+		return false
+	}
 }
 
 func intbytes(x int64, bits uint) []byte {
