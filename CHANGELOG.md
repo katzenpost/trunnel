@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Examples Updated** - All example packages now include encoder functionality
 - **Test Coverage** - Comprehensive test suites added covering all data types and edge cases
 
+### Fixed
+- **Union Encoding Bug** - Fixed nil pointer dereference in union type encoding
+  - Added nil checks in `encodeBinary()` methods for union struct members
+  - Prevents calling `encodeBinary()` on nil pointers in union types with embedded structs
+  - Ensures only the active union member is encoded, fixing corpus test failures
+  - Resolves incorrect serialization behavior for union types
+
 ### Technical Details
 - **Big-endian encoding** consistent with trunnel specification
 - **Automatic import resolution** via `golang.org/x/tools/imports`
