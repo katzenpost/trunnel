@@ -284,16 +284,6 @@ func (g *generator) union(u *ast.UnionMember) ([]Vector, error) {
 		return nil, err
 	}
 
-	// Check if any union case contains struct references
-	// Corpus generation for unions with struct references is not implemented
-	for _, branch := range branches.All() {
-		for _, member := range branch.Case.Members {
-			if hasStructRef(member) {
-				return nil, fault.ErrNotImplemented
-			}
-		}
-	}
-
 	// has the tag already been set?
 	options := branches.All()
 	t, ok := g.constraints.LookupRef(u.Tag)
@@ -317,6 +307,13 @@ func (g *generator) union(u *ast.UnionMember) ([]Vector, error) {
 		// branches entirely so the corpus we produce is parseable by
 		// construction.
 		if hasFailMember(b.Case.Members) {
+			continue
+		}
+		// Corpus generation for branches that embed a struct reference
+		// is not fully implemented and has historically produced data
+		// the parser rejects. Skip just this branch; sibling branches
+		// without struct refs still contribute corpus.
+		if branchHasStructRef(b) {
 			continue
 		}
 		g.constraints = base.Clone()
@@ -413,6 +410,20 @@ func (g *generator) randnulterm(a, b int) []byte {
 func hasFailMember(members []ast.Member) bool {
 	for _, m := range members {
 		if _, ok := m.(*ast.Fail); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// branchHasStructRef reports whether a union branch's case members contain
+// any struct reference. Such branches are skipped during corpus generation.
+func branchHasStructRef(b inspect.Branch) bool {
+	if b.Case == nil {
+		return false
+	}
+	for _, m := range b.Case.Members {
+		if hasStructRef(m) {
 			return true
 		}
 	}
