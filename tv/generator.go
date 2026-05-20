@@ -102,6 +102,13 @@ func (g *generator) files(fs []*ast.File) (*Corpus, error) {
 			}
 			g.constraints = NewConstraints()
 			vs, err := g.structure(s)
+			if err == fault.ErrNotImplemented {
+				// One unsupported struct should not zero out the
+				// corpus for every other struct in the file. The
+				// caller treats a missing Suite as no test cases
+				// for that type, which is exactly what we want.
+				continue
+			}
 			if err != nil {
 				return nil, err
 			}

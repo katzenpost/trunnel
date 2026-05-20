@@ -178,12 +178,16 @@ func TestRemaining(t *testing.T) {
 }
 
 func TestLeftover(t *testing.T) {
-	_, err := String(`struct leftover {
+	c, err := String(`struct leftover {
 		u32 head[2];
 		u32 mid[..-8];
 		u32 tail[2];
 	};`)
-	assert.EqualError(t, err, "not implemented")
+	// Leftover-length arrays are not yet handled by the corpus
+	// generator. The struct is skipped per-item rather than
+	// poisoning the whole call, so we expect a clean (empty) corpus.
+	require.NoError(t, err)
+	assert.Empty(t, c.Vectors("leftover"))
 }
 
 func TestUnionBasic(t *testing.T) {
