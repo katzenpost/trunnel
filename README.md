@@ -3,8 +3,7 @@
 **Complete binary serialization toolkit for Go.** Code generator for binary parsing and encoding. Golang port of the [original implementation for the Tor project](https://gitweb.torproject.org/trunnel.git) with full bidirectional serialization support.
 
 [![go.dev Reference](https://img.shields.io/badge/doc-reference-007d9b?logo=go&style=flat-square)](https://pkg.go.dev/github.com/katzenpost/trunnel)
-[![Build status](https://img.shields.io/travis/katzenpost/trunnel.svg?style=flat-square)](https://travis-ci.org/katzenpost/trunnel)
-[![Coverage](https://img.shields.io/coveralls/katzenpost/trunnel.svg?style=flat-square)](https://coveralls.io/r/katzenpost/trunnel)
+[![test](https://github.com/katzenpost/trunnel/actions/workflows/test.yml/badge.svg)](https://github.com/katzenpost/trunnel/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/katzenpost/trunnel?style=flat-square)](https://goreportcard.com/report/github.com/katzenpost/trunnel)
 
 ## 🚀 Status
