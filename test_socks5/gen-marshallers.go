@@ -34,6 +34,9 @@ func (s *Socks5ClientVersion) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(s.NMethods) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		s.Methods = make([]uint8, int(s.NMethods))
 		for idx := 0; idx < int(s.NMethods); idx++ {
 			if len(cur) < 1 {
@@ -156,6 +159,9 @@ func (d *Domainname) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(d.Len) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		d.Name = make([]byte, int(d.Len))
 		for idx := 0; idx < int(d.Len); idx++ {
 			if len(cur) < 1 {
@@ -324,7 +330,9 @@ func (s *Socks5ClientRequest) encodeBinary() []byte {
 			buf = append(buf, byte(s.Ipv6[idx]))
 		}
 	case s.Atype == 3:
-		buf = append(buf, s.Domainname.encodeBinary()...)
+		if s.Domainname != nil {
+			buf = append(buf, s.Domainname.encodeBinary()...)
+		}
 	default:
 	}
 	{
@@ -490,7 +498,9 @@ func (s *Socks5ServerReply) encodeBinary() []byte {
 			buf = append(buf, byte(s.Ipv6[idx]))
 		}
 	case s.Atype == 3:
-		buf = append(buf, s.Domainname.encodeBinary()...)
+		if s.Domainname != nil {
+			buf = append(buf, s.Domainname.encodeBinary()...)
+		}
 	default:
 	}
 	{
@@ -562,6 +572,9 @@ func (s *Socks5ClientUserpassAuth) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(s.UsernameLen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		s.Username = make([]byte, int(s.UsernameLen))
 		for idx := 0; idx < int(s.UsernameLen); idx++ {
 			if len(cur) < 1 {
@@ -579,6 +592,9 @@ func (s *Socks5ClientUserpassAuth) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(s.PasswdLen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		s.Passwd = make([]byte, int(s.PasswdLen))
 		for idx := 0; idx < int(s.PasswdLen); idx++ {
 			if len(cur) < 1 {
@@ -918,6 +934,9 @@ func (t *TorSocksauthKeyval) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Keylen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Key = make([]byte, int(t.Keylen))
 		for idx := 0; idx < int(t.Keylen); idx++ {
 			if len(cur) < 1 {
@@ -935,6 +954,9 @@ func (t *TorSocksauthKeyval) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Vallen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Val = make([]byte, int(t.Vallen))
 		for idx := 0; idx < int(t.Vallen); idx++ {
 			if len(cur) < 1 {
@@ -1024,6 +1046,9 @@ func (t *TorExtendedSocksAuthRequest) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Npairs) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Pairs = make([]*TorSocksauthKeyval, int(t.Npairs))
 		for idx := 0; idx < int(t.Npairs); idx++ {
 			var err error
@@ -1055,7 +1080,9 @@ func (t *TorExtendedSocksAuthRequest) encodeBinary() []byte {
 		buf = append(buf, tmp...)
 	}
 	for idx := 0; idx < int(t.Npairs); idx++ {
-		buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		if t.Pairs[idx] != nil {
+			buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		}
 	}
 	return buf
 }
@@ -1118,6 +1145,9 @@ func (t *TorExtendedSocksAuthResponse) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Npairs) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Pairs = make([]*TorSocksauthKeyval, int(t.Npairs))
 		for idx := 0; idx < int(t.Npairs); idx++ {
 			var err error
@@ -1150,7 +1180,9 @@ func (t *TorExtendedSocksAuthResponse) encodeBinary() []byte {
 		buf = append(buf, tmp...)
 	}
 	for idx := 0; idx < int(t.Npairs); idx++ {
-		buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		if t.Pairs[idx] != nil {
+			buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		}
 	}
 	return buf
 }
