@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Fourbytes struct {
 	X uint16
 	Y uint16
@@ -37,6 +42,9 @@ func (f *Fourbytes) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseFourbytes(data []byte) (*Fourbytes, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	f := new(Fourbytes)
 	_, err := f.Parse(data)
 	if err != nil {

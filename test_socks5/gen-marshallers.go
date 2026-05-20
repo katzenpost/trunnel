@@ -8,6 +8,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Socks5ClientVersion struct {
 	Version  uint8
 	NMethods uint8
@@ -50,6 +55,9 @@ func (s *Socks5ClientVersion) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ClientVersion(data []byte) (*Socks5ClientVersion, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ClientVersion)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -115,6 +123,9 @@ func (s *Socks5ServerMethod) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ServerMethod(data []byte) (*Socks5ServerMethod, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ServerMethod)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -175,6 +186,9 @@ func (d *Domainname) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseDomainname(data []byte) (*Domainname, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	d := new(Domainname)
 	_, err := d.Parse(data)
 	if err != nil {
@@ -304,6 +318,9 @@ func (s *Socks5ClientRequest) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ClientRequest(data []byte) (*Socks5ClientRequest, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ClientRequest)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -472,6 +489,9 @@ func (s *Socks5ServerReply) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ServerReply(data []byte) (*Socks5ServerReply, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ServerReply)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -608,6 +628,9 @@ func (s *Socks5ClientUserpassAuth) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ClientUserpassAuth(data []byte) (*Socks5ClientUserpassAuth, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ClientUserpassAuth)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -682,6 +705,9 @@ func (s *Socks5ServerUserpathAuth) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ServerUserpathAuth(data []byte) (*Socks5ServerUserpathAuth, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ServerUserpathAuth)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -780,6 +806,9 @@ func (s *Socks4ClientRequest) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks4ClientRequest(data []byte) (*Socks4ClientRequest, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks4ClientRequest)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -878,6 +907,9 @@ func (s *Socks4ServerReply) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks4ServerReply(data []byte) (*Socks4ServerReply, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks4ServerReply)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -970,6 +1002,9 @@ func (t *TorSocksauthKeyval) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseTorSocksauthKeyval(data []byte) (*TorSocksauthKeyval, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(TorSocksauthKeyval)
 	_, err := t.Parse(data)
 	if err != nil {
@@ -1063,6 +1098,9 @@ func (t *TorExtendedSocksAuthRequest) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseTorExtendedSocksAuthRequest(data []byte) (*TorExtendedSocksAuthRequest, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(TorExtendedSocksAuthRequest)
 	_, err := t.Parse(data)
 	if err != nil {
@@ -1162,6 +1200,9 @@ func (t *TorExtendedSocksAuthResponse) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseTorExtendedSocksAuthResponse(data []byte) (*TorExtendedSocksAuthResponse, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(TorExtendedSocksAuthResponse)
 	_, err := t.Parse(data)
 	if err != nil {

@@ -8,6 +8,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Haspos struct {
 	S1   string
 	Pos1 int
@@ -49,6 +54,9 @@ func (h *Haspos) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseHaspos(data []byte) (*Haspos, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	h := new(Haspos)
 	_, err := h.Parse(data)
 	if err != nil {

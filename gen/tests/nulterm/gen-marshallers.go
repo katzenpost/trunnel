@@ -8,6 +8,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type NulTerm struct {
 	X uint32
 	S string
@@ -41,6 +46,9 @@ func (n *NulTerm) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseNulTerm(data []byte) (*NulTerm, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	n := new(NulTerm)
 	_, err := n.Parse(data)
 	if err != nil {

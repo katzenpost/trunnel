@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Ints struct {
 	Byte  uint8
 	Word  uint16
@@ -48,6 +53,9 @@ func (i *Ints) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseInts(data []byte) (*Ints, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	i := new(Ints)
 	_, err := i.Parse(data)
 	if err != nil {

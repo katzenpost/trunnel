@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Unlo struct {
 	Tag         uint8
 	X           uint8
@@ -104,6 +109,9 @@ func (u *Unlo) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseUnlo(data []byte) (*Unlo, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	u := new(Unlo)
 	_, err := u.Parse(data)
 	if err != nil {

@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Leftover struct {
 	Head [2]uint32
 	Mid  []uint32
@@ -58,6 +63,9 @@ func (l *Leftover) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseLeftover(data []byte) (*Leftover, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	l := new(Leftover)
 	_, err := l.Parse(data)
 	if err != nil {

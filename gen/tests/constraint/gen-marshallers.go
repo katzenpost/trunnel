@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Date struct {
 	Year  uint16
 	Month uint8
@@ -49,6 +54,9 @@ func (d *Date) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseDate(data []byte) (*Date, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	d := new(Date)
 	_, err := d.Parse(data)
 	if err != nil {

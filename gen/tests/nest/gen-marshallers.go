@@ -4,6 +4,11 @@ package nest
 
 import "errors"
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Point struct {
 	X uint8
 	Y uint8
@@ -29,6 +34,9 @@ func (p *Point) Parse(data []byte) ([]byte, error) {
 }
 
 func ParsePoint(data []byte) (*Point, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	p := new(Point)
 	_, err := p.Parse(data)
 	if err != nil {
@@ -82,6 +90,9 @@ func (r *Rect) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseRect(data []byte) (*Rect, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	r := new(Rect)
 	_, err := r.Parse(data)
 	if err != nil {
