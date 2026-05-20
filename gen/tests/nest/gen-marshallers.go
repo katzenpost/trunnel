@@ -4,6 +4,11 @@ package nest
 
 import "errors"
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Point struct {
 	X uint8
 	Y uint8
@@ -29,12 +34,33 @@ func (p *Point) Parse(data []byte) ([]byte, error) {
 }
 
 func ParsePoint(data []byte) (*Point, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	p := new(Point)
 	_, err := p.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+func (p *Point) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(p.X))
+	buf = append(buf, byte(p.Y))
+	return buf
+}
+
+func (p *Point) MarshalBinary() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	return p.encodeBinary(), nil
+}
+
+func (p *Point) validate() error {
+	return nil
 }
 
 type Rect struct {
@@ -64,10 +90,45 @@ func (r *Rect) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseRect(data []byte) (*Rect, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	r := new(Rect)
 	_, err := r.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
+}
+
+func (r *Rect) encodeBinary() []byte {
+	var buf []byte
+	if r.NorthEast != nil {
+		buf = append(buf, r.NorthEast.encodeBinary()...)
+	}
+	if r.SouthWest != nil {
+		buf = append(buf, r.SouthWest.encodeBinary()...)
+	}
+	return buf
+}
+
+func (r *Rect) MarshalBinary() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	return r.encodeBinary(), nil
+}
+
+func (r *Rect) validate() error {
+	if r.NorthEast != nil {
+		if err := r.NorthEast.validate(); err != nil {
+			return err
+		}
+	}
+	if r.SouthWest != nil {
+		if err := r.SouthWest.validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

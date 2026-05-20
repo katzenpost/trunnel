@@ -102,6 +102,13 @@ func (g *generator) files(fs []*ast.File) (*Corpus, error) {
 			}
 			g.constraints = NewConstraints()
 			vs, err := g.structure(s)
+			if err == fault.ErrNotImplemented {
+				// One unsupported struct should not zero out the
+				// corpus for every other struct in the file. The
+				// caller treats a missing Suite as no test cases
+				// for that type, which is exactly what we want.
+				continue
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -277,16 +284,6 @@ func (g *generator) union(u *ast.UnionMember) ([]Vector, error) {
 		return nil, err
 	}
 
-	// Check if any union case contains struct references
-	// Corpus generation for unions with struct references is not implemented
-	for _, branch := range branches.All() {
-		for _, member := range branch.Case.Members {
-			if hasStructRef(member) {
-				return nil, fault.ErrNotImplemented
-			}
-		}
-	}
-
 	// has the tag already been set?
 	options := branches.All()
 	t, ok := g.constraints.LookupRef(u.Tag)
@@ -302,6 +299,23 @@ func (g *generator) union(u *ast.UnionMember) ([]Vector, error) {
 	results := []Vector{}
 
 	for _, b := range options {
+		// A `default: fail` (or any case containing a Fail directive) is
+		// declarative: the parser rejects values that land here. Picking
+		// a tag value from this branch's interval set and then emitting
+		// the surrounding struct produces a corpus entry whose tag byte
+		// drives the parser straight into the fail directive. Skip such
+		// branches entirely so the corpus we produce is parseable by
+		// construction.
+		if hasFailMember(b.Case.Members) {
+			continue
+		}
+		// Corpus generation for branches that embed a struct reference
+		// is not fully implemented and has historically produced data
+		// the parser rejects. Skip just this branch; sibling branches
+		// without struct refs still contribute corpus.
+		if branchHasStructRef(b) {
+			continue
+		}
 		g.constraints = base.Clone()
 		g.constraints.LookupOrCreateRef(u.Tag, int64(b.Set.RandomWithGenerator(g.rnd))) // XXX cast
 		vs, err := g.members([]Vector{g.empty()}, b.Case.Members)
@@ -390,6 +404,30 @@ func (g *generator) randnulterm(a, b int) []byte {
 		s[i] = alpha[g.rnd.Intn(len(alpha))]
 	}
 	return s
+}
+
+// hasFailMember reports whether any of the given members is a Fail directive.
+func hasFailMember(members []ast.Member) bool {
+	for _, m := range members {
+		if _, ok := m.(*ast.Fail); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// branchHasStructRef reports whether a union branch's case members contain
+// any struct reference. Such branches are skipped during corpus generation.
+func branchHasStructRef(b inspect.Branch) bool {
+	if b.Case == nil {
+		return false
+	}
+	for _, m := range b.Case.Members {
+		if hasStructRef(m) {
+			return true
+		}
+	}
+	return false
 }
 
 // hasStructRef checks if a member contains a struct reference

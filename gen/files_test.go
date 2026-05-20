@@ -32,16 +32,23 @@ func TestFilesBuild(t *testing.T) {
 }
 
 func Build(t *testing.T, filenames []string) {
-	srcs := [][]byte{}
+	// Match how the CLI actually invokes the generator: parse all files
+	// in the group into a single []*ast.File, then call Marshallers once
+	// to emit one Go source file for the whole package. Calling
+	// Marshallers per-file would emit one source per input file with
+	// duplicate package-level declarations (e.g. MaxParseSize), which
+	// is not a usage pattern the generator supports.
+	asts := make([]*ast.File, 0, len(filenames))
 	for _, filename := range filenames {
 		f, err := parse.File(filename)
 		require.NoError(t, err)
-		src, err := Marshallers("pkg", []*ast.File{f})
-		require.NoError(t, err)
-		srcs = append(srcs, src)
+		asts = append(asts, f)
 	}
 
-	output, err := test.Build(srcs)
+	src, err := Marshallers("pkg", asts)
+	require.NoError(t, err)
+
+	output, err := test.Build([][]byte{src})
 	if err != nil {
 		t.Fatal(string(output))
 	}

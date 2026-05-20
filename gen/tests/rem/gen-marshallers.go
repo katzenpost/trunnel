@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Rem struct {
 	Head uint32
 	Tail []uint8
@@ -37,10 +42,39 @@ func (r *Rem) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseRem(data []byte) (*Rem, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	r := new(Rem)
 	_, err := r.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return r, nil
+}
+
+func (r *Rem) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, r.Head)
+		buf = append(buf, tmp...)
+	}
+	for idx := 0; idx < len(r.Tail); idx++ {
+		buf = append(buf, byte(r.Tail[idx]))
+	}
+	return buf
+}
+
+func (r *Rem) MarshalBinary() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	return r.encodeBinary(), nil
+}
+
+func (r *Rem) validate() error {
+	for idx := 0; idx < len(r.Tail); idx++ {
+	}
+	return nil
 }

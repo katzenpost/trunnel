@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Fourbytes struct {
 	X uint16
 	Y uint16
@@ -37,10 +42,39 @@ func (f *Fourbytes) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseFourbytes(data []byte) (*Fourbytes, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	f := new(Fourbytes)
 	_, err := f.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return f, nil
+}
+
+func (f *Fourbytes) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, f.X)
+		buf = append(buf, tmp...)
+	}
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, f.Y)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (f *Fourbytes) MarshalBinary() ([]byte, error) {
+	if err := f.validate(); err != nil {
+		return nil, err
+	}
+	return f.encodeBinary(), nil
+}
+
+func (f *Fourbytes) validate() error {
+	return nil
 }

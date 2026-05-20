@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Unlo struct {
 	Tag         uint8
 	X           uint8
@@ -88,6 +93,9 @@ func (u *Unlo) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(u.Leftoverlen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		u.Leftovers = make([]uint8, int(u.Leftoverlen))
 		for idx := 0; idx < int(u.Leftoverlen); idx++ {
 			if len(cur) < 1 {
@@ -101,10 +109,65 @@ func (u *Unlo) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseUnlo(data []byte) (*Unlo, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	u := new(Unlo)
 	_, err := u.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return u, nil
+}
+
+func (u *Unlo) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(u.Tag))
+	switch {
+	case u.Tag == 1:
+		buf = append(buf, byte(u.X))
+	case u.Tag == 2:
+		for idx := 0; idx < len(u.Y); idx++ {
+			buf = append(buf, byte(u.Y[idx]))
+		}
+	case u.Tag == 4:
+		buf = append(buf, byte(u.Byte))
+		for idx := 0; idx < len(u.Z); idx++ {
+			{
+				tmp := make([]byte, 2)
+				binary.BigEndian.PutUint16(tmp, u.Z[idx])
+				buf = append(buf, tmp...)
+			}
+		}
+	}
+	buf = append(buf, byte(u.Leftoverlen))
+	for idx := 0; idx < int(u.Leftoverlen); idx++ {
+		buf = append(buf, byte(u.Leftovers[idx]))
+	}
+	return buf
+}
+
+func (u *Unlo) MarshalBinary() ([]byte, error) {
+	if err := u.validate(); err != nil {
+		return nil, err
+	}
+	return u.encodeBinary(), nil
+}
+
+func (u *Unlo) validate() error {
+	switch {
+	case u.Tag == 1:
+	case u.Tag == 2:
+		for idx := 0; idx < len(u.Y); idx++ {
+		}
+	case u.Tag == 4:
+		for idx := 0; idx < len(u.Z); idx++ {
+		}
+	}
+	if len(u.Leftovers) != int(u.Leftoverlen) {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(u.Leftovers); idx++ {
+	}
+	return nil
 }

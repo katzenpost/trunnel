@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type UnionCmds struct {
 	Tag uint8
 	X   [2]uint32
@@ -52,10 +57,57 @@ func (u *UnionCmds) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseUnionCmds(data []byte) (*UnionCmds, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	u := new(UnionCmds)
 	_, err := u.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return u, nil
+}
+
+func (u *UnionCmds) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(u.Tag))
+	switch {
+	case u.Tag == 1:
+	case u.Tag == 2:
+	default:
+		for idx := 0; idx < 2; idx++ {
+			{
+				tmp := make([]byte, 4)
+				binary.BigEndian.PutUint32(tmp, u.X[idx])
+				buf = append(buf, tmp...)
+			}
+		}
+	}
+	{
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, u.Y)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (u *UnionCmds) MarshalBinary() ([]byte, error) {
+	if err := u.validate(); err != nil {
+		return nil, err
+	}
+	return u.encodeBinary(), nil
+}
+
+func (u *UnionCmds) validate() error {
+	switch {
+	case u.Tag == 1:
+	case u.Tag == 2:
+	default:
+		if len(u.X) != 2 {
+			return errors.New("array length constraint violated")
+		}
+		for idx := 0; idx < len(u.X); idx++ {
+		}
+	}
+	return nil
 }

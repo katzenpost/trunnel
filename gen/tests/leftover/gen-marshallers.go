@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Leftover struct {
 	Head [2]uint32
 	Mid  []uint32
@@ -58,10 +63,62 @@ func (l *Leftover) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseLeftover(data []byte) (*Leftover, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	l := new(Leftover)
 	_, err := l.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return l, nil
+}
+
+func (l *Leftover) encodeBinary() []byte {
+	var buf []byte
+	for idx := 0; idx < 2; idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, l.Head[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < len(l.Mid); idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, l.Mid[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < 2; idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, l.Tail[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	return buf
+}
+
+func (l *Leftover) MarshalBinary() ([]byte, error) {
+	if err := l.validate(); err != nil {
+		return nil, err
+	}
+	return l.encodeBinary(), nil
+}
+
+func (l *Leftover) validate() error {
+	if len(l.Head) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(l.Head); idx++ {
+	}
+	for idx := 0; idx < len(l.Mid); idx++ {
+	}
+	if len(l.Tail) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(l.Tail); idx++ {
+	}
+	return nil
 }

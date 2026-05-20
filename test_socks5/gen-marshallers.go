@@ -8,6 +8,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Socks5ClientVersion struct {
 	Version  uint8
 	NMethods uint8
@@ -34,6 +39,9 @@ func (s *Socks5ClientVersion) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(s.NMethods) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		s.Methods = make([]uint8, int(s.NMethods))
 		for idx := 0; idx < int(s.NMethods); idx++ {
 			if len(cur) < 1 {
@@ -47,6 +55,9 @@ func (s *Socks5ClientVersion) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ClientVersion(data []byte) (*Socks5ClientVersion, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ClientVersion)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -112,6 +123,9 @@ func (s *Socks5ServerMethod) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ServerMethod(data []byte) (*Socks5ServerMethod, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ServerMethod)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -156,6 +170,9 @@ func (d *Domainname) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(d.Len) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		d.Name = make([]byte, int(d.Len))
 		for idx := 0; idx < int(d.Len); idx++ {
 			if len(cur) < 1 {
@@ -169,6 +186,9 @@ func (d *Domainname) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseDomainname(data []byte) (*Domainname, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	d := new(Domainname)
 	_, err := d.Parse(data)
 	if err != nil {
@@ -298,6 +318,9 @@ func (s *Socks5ClientRequest) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ClientRequest(data []byte) (*Socks5ClientRequest, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ClientRequest)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -324,7 +347,9 @@ func (s *Socks5ClientRequest) encodeBinary() []byte {
 			buf = append(buf, byte(s.Ipv6[idx]))
 		}
 	case s.Atype == 3:
-		buf = append(buf, s.Domainname.encodeBinary()...)
+		if s.Domainname != nil {
+			buf = append(buf, s.Domainname.encodeBinary()...)
+		}
 	default:
 	}
 	{
@@ -464,6 +489,9 @@ func (s *Socks5ServerReply) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ServerReply(data []byte) (*Socks5ServerReply, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ServerReply)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -490,7 +518,9 @@ func (s *Socks5ServerReply) encodeBinary() []byte {
 			buf = append(buf, byte(s.Ipv6[idx]))
 		}
 	case s.Atype == 3:
-		buf = append(buf, s.Domainname.encodeBinary()...)
+		if s.Domainname != nil {
+			buf = append(buf, s.Domainname.encodeBinary()...)
+		}
 	default:
 	}
 	{
@@ -562,6 +592,9 @@ func (s *Socks5ClientUserpassAuth) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(s.UsernameLen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		s.Username = make([]byte, int(s.UsernameLen))
 		for idx := 0; idx < int(s.UsernameLen); idx++ {
 			if len(cur) < 1 {
@@ -579,6 +612,9 @@ func (s *Socks5ClientUserpassAuth) Parse(data []byte) ([]byte, error) {
 		cur = cur[1:]
 	}
 	{
+		if uint64(s.PasswdLen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		s.Passwd = make([]byte, int(s.PasswdLen))
 		for idx := 0; idx < int(s.PasswdLen); idx++ {
 			if len(cur) < 1 {
@@ -592,6 +628,9 @@ func (s *Socks5ClientUserpassAuth) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ClientUserpassAuth(data []byte) (*Socks5ClientUserpassAuth, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ClientUserpassAuth)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -666,6 +705,9 @@ func (s *Socks5ServerUserpathAuth) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks5ServerUserpathAuth(data []byte) (*Socks5ServerUserpathAuth, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks5ServerUserpathAuth)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -764,6 +806,9 @@ func (s *Socks4ClientRequest) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks4ClientRequest(data []byte) (*Socks4ClientRequest, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks4ClientRequest)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -862,6 +907,9 @@ func (s *Socks4ServerReply) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseSocks4ServerReply(data []byte) (*Socks4ServerReply, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	s := new(Socks4ServerReply)
 	_, err := s.Parse(data)
 	if err != nil {
@@ -918,6 +966,9 @@ func (t *TorSocksauthKeyval) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Keylen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Key = make([]byte, int(t.Keylen))
 		for idx := 0; idx < int(t.Keylen); idx++ {
 			if len(cur) < 1 {
@@ -935,6 +986,9 @@ func (t *TorSocksauthKeyval) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Vallen) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Val = make([]byte, int(t.Vallen))
 		for idx := 0; idx < int(t.Vallen); idx++ {
 			if len(cur) < 1 {
@@ -948,6 +1002,9 @@ func (t *TorSocksauthKeyval) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseTorSocksauthKeyval(data []byte) (*TorSocksauthKeyval, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(TorSocksauthKeyval)
 	_, err := t.Parse(data)
 	if err != nil {
@@ -1024,6 +1081,9 @@ func (t *TorExtendedSocksAuthRequest) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Npairs) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Pairs = make([]*TorSocksauthKeyval, int(t.Npairs))
 		for idx := 0; idx < int(t.Npairs); idx++ {
 			var err error
@@ -1038,6 +1098,9 @@ func (t *TorExtendedSocksAuthRequest) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseTorExtendedSocksAuthRequest(data []byte) (*TorExtendedSocksAuthRequest, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(TorExtendedSocksAuthRequest)
 	_, err := t.Parse(data)
 	if err != nil {
@@ -1055,7 +1118,9 @@ func (t *TorExtendedSocksAuthRequest) encodeBinary() []byte {
 		buf = append(buf, tmp...)
 	}
 	for idx := 0; idx < int(t.Npairs); idx++ {
-		buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		if t.Pairs[idx] != nil {
+			buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		}
 	}
 	return buf
 }
@@ -1118,6 +1183,9 @@ func (t *TorExtendedSocksAuthResponse) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(t.Npairs) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		t.Pairs = make([]*TorSocksauthKeyval, int(t.Npairs))
 		for idx := 0; idx < int(t.Npairs); idx++ {
 			var err error
@@ -1132,6 +1200,9 @@ func (t *TorExtendedSocksAuthResponse) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseTorExtendedSocksAuthResponse(data []byte) (*TorExtendedSocksAuthResponse, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(TorExtendedSocksAuthResponse)
 	_, err := t.Parse(data)
 	if err != nil {
@@ -1150,7 +1221,9 @@ func (t *TorExtendedSocksAuthResponse) encodeBinary() []byte {
 		buf = append(buf, tmp...)
 	}
 	for idx := 0; idx < int(t.Npairs); idx++ {
-		buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		if t.Pairs[idx] != nil {
+			buf = append(buf, t.Pairs[idx].encodeBinary()...)
+		}
 	}
 	return buf
 }

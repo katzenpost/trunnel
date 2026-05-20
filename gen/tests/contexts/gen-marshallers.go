@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Flag struct {
 	Flagval uint8
 }
@@ -43,12 +48,36 @@ func (p *Point) Parse(data []byte) ([]byte, error) {
 }
 
 func ParsePoint(data []byte) (*Point, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	p := new(Point)
 	_, err := p.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+func (p *Point) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(p.X))
+	buf = append(buf, byte(p.Y))
+	return buf
+}
+
+func (p *Point) MarshalBinary() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	return p.encodeBinary(), nil
+}
+
+func (p *Point) validate() error {
+	if !(0 <= p.X && p.X <= 254) {
+		return errors.New("integer constraint violated")
+	}
+	return nil
 }
 
 type Twosize struct {
@@ -85,6 +114,9 @@ func (t *Twosize) Parse(data []byte, flag Flag) ([]byte, error) {
 }
 
 func ParseTwosize(data []byte, flag Flag) (*Twosize, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	t := new(Twosize)
 	_, err := t.Parse(data, flag)
 	if err != nil {
@@ -108,6 +140,9 @@ func (v *Varsize) Parse(data []byte, count Count) ([]byte, error) {
 		cur = cur[4:]
 	}
 	{
+		if uint64(count.Countval) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		v.Msg = make([]uint8, int(count.Countval))
 		for idx := 0; idx < int(count.Countval); idx++ {
 			if len(cur) < 1 {
@@ -121,6 +156,9 @@ func (v *Varsize) Parse(data []byte, count Count) ([]byte, error) {
 }
 
 func ParseVarsize(data []byte, count Count) (*Varsize, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	v := new(Varsize)
 	_, err := v.Parse(data, count)
 	if err != nil {
@@ -206,6 +244,9 @@ func (c *Ccomplex) Parse(data []byte, flag Flag, count Count) ([]byte, error) {
 }
 
 func ParseCcomplex(data []byte, flag Flag, count Count) (*Ccomplex, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	c := new(Ccomplex)
 	_, err := c.Parse(data, flag, count)
 	if err != nil {

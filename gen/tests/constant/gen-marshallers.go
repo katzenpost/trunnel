@@ -4,6 +4,11 @@ package constant
 
 import "errors"
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Constants struct {
 	X uint8
 }
@@ -24,10 +29,33 @@ func (c *Constants) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseConstants(data []byte) (*Constants, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	c := new(Constants)
 	_, err := c.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return c, nil
+}
+
+func (c *Constants) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(c.X))
+	return buf
+}
+
+func (c *Constants) MarshalBinary() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	return c.encodeBinary(), nil
+}
+
+func (c *Constants) validate() error {
+	if !(c.X == 42 || c.X == 66 || c.X == 34) {
+		return errors.New("integer constraint violated")
+	}
+	return nil
 }

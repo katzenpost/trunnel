@@ -8,6 +8,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Date struct {
 	Year  uint16
 	Month uint8
@@ -41,12 +46,38 @@ func (d *Date) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseDate(data []byte) (*Date, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	d := new(Date)
 	_, err := d.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return d, nil
+}
+
+func (d *Date) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, d.Year)
+		buf = append(buf, tmp...)
+	}
+	buf = append(buf, byte(d.Month))
+	buf = append(buf, byte(d.Day))
+	return buf
+}
+
+func (d *Date) MarshalBinary() ([]byte, error) {
+	if err := d.validate(); err != nil {
+		return nil, err
+	}
+	return d.encodeBinary(), nil
+}
+
+func (d *Date) validate() error {
+	return nil
 }
 
 type Basic struct {
@@ -112,10 +143,68 @@ func (b *Basic) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseBasic(data []byte) (*Basic, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	b := new(Basic)
 	_, err := b.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return b, nil
+}
+
+func (b *Basic) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(b.Tag))
+	switch {
+	case b.Tag == 2:
+		if b.D != nil {
+			buf = append(buf, b.D.encodeBinary()...)
+		}
+	case b.Tag == 3:
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, b.Num)
+			buf = append(buf, tmp...)
+		}
+	case b.Tag == 4:
+		for idx := 0; idx < 8; idx++ {
+			buf = append(buf, byte(b.Eightbytes[idx]))
+		}
+	case b.Tag == 6:
+		buf = append(buf, []byte(b.String)...)
+		buf = append(buf, 0)
+	}
+	return buf
+}
+
+func (b *Basic) MarshalBinary() ([]byte, error) {
+	if err := b.validate(); err != nil {
+		return nil, err
+	}
+	return b.encodeBinary(), nil
+}
+
+func (b *Basic) validate() error {
+	if !(b.Tag == 2 || b.Tag == 3 || b.Tag == 4 || b.Tag == 5 || b.Tag == 6) {
+		return errors.New("integer constraint violated")
+	}
+	switch {
+	case b.Tag == 2:
+		if b.D != nil {
+			if err := b.D.validate(); err != nil {
+				return err
+			}
+		}
+	case b.Tag == 3:
+	case b.Tag == 4:
+		if len(b.Eightbytes) != 8 {
+			return errors.New("array length constraint violated")
+		}
+		for idx := 0; idx < len(b.Eightbytes); idx++ {
+		}
+	case b.Tag == 6:
+	}
+	return nil
 }

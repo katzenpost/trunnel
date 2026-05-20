@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Color struct {
 	R uint8
 	G uint8
@@ -40,12 +45,34 @@ func (c *Color) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseColor(data []byte) (*Color, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	c := new(Color)
 	_, err := c.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return c, nil
+}
+
+func (c *Color) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(c.R))
+	buf = append(buf, byte(c.G))
+	buf = append(buf, byte(c.B))
+	return buf
+}
+
+func (c *Color) MarshalBinary() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	return c.encodeBinary(), nil
+}
+
+func (c *Color) validate() error {
+	return nil
 }
 
 type FixieDemo struct {
@@ -118,10 +145,96 @@ func (f *FixieDemo) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseFixieDemo(data []byte) (*FixieDemo, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	f := new(FixieDemo)
 	_, err := f.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return f, nil
+}
+
+func (f *FixieDemo) encodeBinary() []byte {
+	var buf []byte
+	for idx := 0; idx < 8; idx++ {
+		buf = append(buf, byte(f.Bytes[idx]))
+	}
+	for idx := 0; idx < 8; idx++ {
+		buf = append(buf, byte(f.Letters[idx]))
+	}
+	for idx := 0; idx < 4; idx++ {
+		{
+			tmp := make([]byte, 2)
+			binary.BigEndian.PutUint16(tmp, f.Shortwords[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < 2; idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, f.Words[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < 2; idx++ {
+		{
+			tmp := make([]byte, 8)
+			binary.BigEndian.PutUint64(tmp, f.BigWords[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < 2; idx++ {
+		if f.Colors[idx] != nil {
+			buf = append(buf, f.Colors[idx].encodeBinary()...)
+		}
+	}
+	return buf
+}
+
+func (f *FixieDemo) MarshalBinary() ([]byte, error) {
+	if err := f.validate(); err != nil {
+		return nil, err
+	}
+	return f.encodeBinary(), nil
+}
+
+func (f *FixieDemo) validate() error {
+	if len(f.Bytes) != 8 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(f.Bytes); idx++ {
+	}
+	if len(f.Letters) != 8 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(f.Letters); idx++ {
+	}
+	if len(f.Shortwords) != 4 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(f.Shortwords); idx++ {
+	}
+	if len(f.Words) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(f.Words); idx++ {
+	}
+	if len(f.BigWords) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(f.BigWords); idx++ {
+	}
+	if len(f.Colors) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(f.Colors); idx++ {
+		if f.Colors[idx] != nil {
+			if err := f.Colors[idx].validate(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

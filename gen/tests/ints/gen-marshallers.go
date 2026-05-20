@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// MaxParseSize bounds the total input size accepted by the
+// top-level Parse... convenience constructors in this package.
+// Adjust before the first parse call to override the default.
+var MaxParseSize = 16777216
+
 type Ints struct {
 	Byte  uint8
 	Word  uint16
@@ -48,10 +53,45 @@ func (i *Ints) Parse(data []byte) ([]byte, error) {
 }
 
 func ParseInts(data []byte) (*Ints, error) {
+	if len(data) > MaxParseSize {
+		return nil, errors.New("input exceeds MaxParseSize")
+	}
 	i := new(Ints)
 	_, err := i.Parse(data)
 	if err != nil {
 		return nil, err
 	}
 	return i, nil
+}
+
+func (i *Ints) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(i.Byte))
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, i.Word)
+		buf = append(buf, tmp...)
+	}
+	{
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, i.Dword)
+		buf = append(buf, tmp...)
+	}
+	{
+		tmp := make([]byte, 8)
+		binary.BigEndian.PutUint64(tmp, i.Qword)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (i *Ints) MarshalBinary() ([]byte, error) {
+	if err := i.validate(); err != nil {
+		return nil, err
+	}
+	return i.encodeBinary(), nil
+}
+
+func (i *Ints) validate() error {
+	return nil
 }

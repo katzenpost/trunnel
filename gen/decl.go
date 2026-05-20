@@ -29,6 +29,7 @@ type generator struct {
 
 func (g *generator) files(pkg string, fs []*ast.File) error {
 	g.header(pkg)
+	g.maxParseSize()
 
 	if err := g.init(fs); err != nil {
 		return err
@@ -41,6 +42,24 @@ func (g *generator) files(pkg string, fs []*ast.File) error {
 	}
 
 	return nil
+}
+
+// defaultMaxParseSize is the default value the generator emits for the
+// package-level MaxParseSize variable. 16 MiB is comfortably above any
+// realistic single-message payload while remaining far below the kind of
+// allocation an adversary would use for a memory-exhaustion attack.
+const defaultMaxParseSize = 16 << 20
+
+// maxParseSize emits a package-level MaxParseSize variable that bounds the
+// total input size accepted by the top-level Parse... convenience
+// constructors. The check applies only at the public entry points; nested
+// or in-stream parses via Foo.Parse(data, ...) remain unchecked so that
+// recursive struct refs do not re-validate on every step.
+func (g *generator) maxParseSize() {
+	g.printf("// MaxParseSize bounds the total input size accepted by the\n")
+	g.printf("// top-level Parse... convenience constructors in this package.\n")
+	g.printf("// Adjust before the first parse call to override the default.\n")
+	g.printf("var MaxParseSize = %d\n\n", defaultMaxParseSize)
 }
 
 func (g *generator) init(fs []*ast.File) (err error) {
@@ -78,7 +97,17 @@ func (g *generator) structure(s *ast.Struct) {
 	g.structDecl(s)
 	g.parse(s)
 	g.parseConstructor(s)
-	g.marshalBinary(s)
+
+	// The binary encoder, MarshalBinary, and validate methods reference
+	// context-scoped variables (e.g. flag.Flagval) in their bodies but do
+	// not take the context as a parameter. Emitting them for a struct
+	// declared "with context X" produces code that does not compile.
+	// Until the encoder gains context-parameter support, skip emission
+	// for context-using structs. The Parse path, which threads contexts
+	// through its signature, is unaffected.
+	if len(s.Contexts) == 0 {
+		g.marshalBinary(s)
+	}
 
 	g.receiver = ""
 }
@@ -120,6 +149,7 @@ func (g *generator) structUnionMemberDecl(m *ast.UnionMember) {
 func (g *generator) parseConstructor(s *ast.Struct) {
 	n := name(s.Name)
 	g.printf("func Parse%s(data []byte%s) (*%s, error) {\n", n, contextSignature(s.Contexts), n)
+	g.printf("if len(data) > MaxParseSize { return nil, errors.New(\"input exceeds MaxParseSize\") }\n")
 	g.printf("%s := new(%s)\n", g.receiver, n)
 	g.printf("_, err := %s.Parse(data%s)\n", g.receiver, contextArgs(s.Contexts))
 	g.printf("if err != nil { return nil, err }\n")
@@ -226,7 +256,27 @@ func (g *generator) parseArray(lhs string, base ast.Type, s ast.LengthConstraint
 		g.printf("}\n")
 
 	case *ast.IDRef:
-		size := fmt.Sprintf("int(%s)", g.ref(s))
+		ref := g.ref(s)
+		// Bound the allocation by the remaining input before make. The
+		// length field is attacker-controlled and may be a u32 holding
+		// a value far larger than len(cur); without this check, the
+		// make() runs first and can be coerced into a multi-gigabyte
+		// allocation. The comparison is unsigned so that on 32-bit
+		// platforms a u32 length above MaxInt32 (which sign-extends to
+		// a negative int) does not silently pass an int comparison and
+		// then panic in runtime.makeslice.
+		//
+		// For multi-byte element types the actual allocation is
+		// size*elemBytes; dividing len(cur) by elemBytes keeps the
+		// check tight so the allocation is bounded by len(cur), not by
+		// len(cur)*elemBytes. For single-byte elements (u8/char) the
+		// bound is the same and the simpler form reads better.
+		if eb := elementByteSize(base); eb > 1 {
+			g.printf("if uint64(%s) > uint64(len(%s))/%d { return nil, errors.New(\"data too short\") }\n", ref, g.data, eb)
+		} else {
+			g.printf("if uint64(%s) > uint64(len(%s)) { return nil, errors.New(\"data too short\") }\n", ref, g.data)
+		}
+		size := fmt.Sprintf("int(%s)", ref)
 		g.printf("%s = make([]%s, %s)\n", lhs, g.tipe(base), size)
 		g.printf("for idx := 0; idx < %s; idx++ {\n", size)
 		g.parseType(lhs+"[idx]", base)
@@ -314,6 +364,22 @@ func (g *generator) lengthCheck(min string) {
 
 func (g *generator) assertEnd() {
 	g.printf("if len(%s) > 0 { return nil, errors.New(\"trailing data disallowed\") }\n", g.data)
+}
+
+// elementByteSize returns the byte size of a single element of base, used
+// by parseArray to bound the allocation tightly against the remaining
+// input. For variable-sized members (struct refs and the like) we
+// conservatively return 1, which still bounds the allocation by
+// O(len(cur)) without claiming a tighter ratio than we can prove.
+func elementByteSize(base ast.Type) int {
+	switch t := base.(type) {
+	case *ast.IntType:
+		return int(t.Size) / 8
+	case *ast.CharType:
+		return 1
+	default:
+		return 1
+	}
 }
 
 func (g *generator) integer(i ast.Integer) string {
