@@ -78,7 +78,17 @@ func (g *generator) structure(s *ast.Struct) {
 	g.structDecl(s)
 	g.parse(s)
 	g.parseConstructor(s)
-	g.marshalBinary(s)
+
+	// The binary encoder, MarshalBinary, and validate methods reference
+	// context-scoped variables (e.g. flag.Flagval) in their bodies but do
+	// not take the context as a parameter. Emitting them for a struct
+	// declared "with context X" produces code that does not compile.
+	// Until the encoder gains context-parameter support, skip emission
+	// for context-using structs. The Parse path, which threads contexts
+	// through its signature, is unaffected.
+	if len(s.Contexts) == 0 {
+		g.marshalBinary(s)
+	}
 
 	g.receiver = ""
 }
