@@ -44,3 +44,22 @@ func ParseColor(data []byte) (*Color, error) {
 	}
 	return c, nil
 }
+
+func (c *Color) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(c.R))
+	buf = append(buf, byte(c.G))
+	buf = append(buf, byte(c.B))
+	return buf
+}
+
+func (c *Color) MarshalBinary() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	return c.encodeBinary(), nil
+}
+
+func (c *Color) validate() error {
+	return nil
+}

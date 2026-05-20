@@ -127,3 +127,59 @@ func ParseUnionWithLen(data []byte) (*UnionWithLen, error) {
 	}
 	return u, nil
 }
+
+func (u *UnionWithLen) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, u.Tag)
+		buf = append(buf, tmp...)
+	}
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, u.UnionLen)
+		buf = append(buf, tmp...)
+	}
+	switch {
+	case u.Tag == 1:
+		buf = append(buf, byte(u.R))
+		buf = append(buf, byte(u.G))
+		buf = append(buf, byte(u.B))
+	case u.Tag == 2:
+		{
+			tmp := make([]byte, 2)
+			binary.BigEndian.PutUint16(tmp, u.Year)
+			buf = append(buf, tmp...)
+		}
+		buf = append(buf, byte(u.Month))
+		buf = append(buf, byte(u.Day))
+	default:
+		for idx := 0; idx < len(u.Unparseable); idx++ {
+			buf = append(buf, byte(u.Unparseable[idx]))
+		}
+	}
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, u.RightAfterTheUnion)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (u *UnionWithLen) MarshalBinary() ([]byte, error) {
+	if err := u.validate(); err != nil {
+		return nil, err
+	}
+	return u.encodeBinary(), nil
+}
+
+func (u *UnionWithLen) validate() error {
+	switch {
+	case u.Tag == 1:
+	case u.Tag == 2:
+	default:
+		for idx := 0; idx < len(u.Unparseable); idx++ {
+		}
+	}
+	return nil
+}

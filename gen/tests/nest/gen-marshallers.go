@@ -37,6 +37,24 @@ func ParsePoint(data []byte) (*Point, error) {
 	return p, nil
 }
 
+func (p *Point) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(p.X))
+	buf = append(buf, byte(p.Y))
+	return buf
+}
+
+func (p *Point) MarshalBinary() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	return p.encodeBinary(), nil
+}
+
+func (p *Point) validate() error {
+	return nil
+}
+
 type Rect struct {
 	NorthEast *Point
 	SouthWest *Point
@@ -70,4 +88,36 @@ func ParseRect(data []byte) (*Rect, error) {
 		return nil, err
 	}
 	return r, nil
+}
+
+func (r *Rect) encodeBinary() []byte {
+	var buf []byte
+	if r.NorthEast != nil {
+		buf = append(buf, r.NorthEast.encodeBinary()...)
+	}
+	if r.SouthWest != nil {
+		buf = append(buf, r.SouthWest.encodeBinary()...)
+	}
+	return buf
+}
+
+func (r *Rect) MarshalBinary() ([]byte, error) {
+	if err := r.validate(); err != nil {
+		return nil, err
+	}
+	return r.encodeBinary(), nil
+}
+
+func (r *Rect) validate() error {
+	if r.NorthEast != nil {
+		if err := r.NorthEast.validate(); err != nil {
+			return err
+		}
+	}
+	if r.SouthWest != nil {
+		if err := r.SouthWest.validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

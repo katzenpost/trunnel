@@ -65,3 +65,52 @@ func ParseLeftover(data []byte) (*Leftover, error) {
 	}
 	return l, nil
 }
+
+func (l *Leftover) encodeBinary() []byte {
+	var buf []byte
+	for idx := 0; idx < 2; idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, l.Head[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < len(l.Mid); idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, l.Mid[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	for idx := 0; idx < 2; idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, l.Tail[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	return buf
+}
+
+func (l *Leftover) MarshalBinary() ([]byte, error) {
+	if err := l.validate(); err != nil {
+		return nil, err
+	}
+	return l.encodeBinary(), nil
+}
+
+func (l *Leftover) validate() error {
+	if len(l.Head) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(l.Head); idx++ {
+	}
+	for idx := 0; idx < len(l.Mid); idx++ {
+	}
+	if len(l.Tail) != 2 {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(l.Tail); idx++ {
+	}
+	return nil
+}

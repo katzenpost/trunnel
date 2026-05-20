@@ -22,6 +22,9 @@ func (v *VarArray) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
+		if uint64(v.NWords) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		v.Words = make([]uint32, int(v.NWords))
 		for idx := 0; idx < int(v.NWords); idx++ {
 			if len(cur) < 4 {
@@ -41,4 +44,37 @@ func ParseVarArray(data []byte) (*VarArray, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func (v *VarArray) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, v.NWords)
+		buf = append(buf, tmp...)
+	}
+	for idx := 0; idx < int(v.NWords); idx++ {
+		{
+			tmp := make([]byte, 4)
+			binary.BigEndian.PutUint32(tmp, v.Words[idx])
+			buf = append(buf, tmp...)
+		}
+	}
+	return buf
+}
+
+func (v *VarArray) MarshalBinary() ([]byte, error) {
+	if err := v.validate(); err != nil {
+		return nil, err
+	}
+	return v.encodeBinary(), nil
+}
+
+func (v *VarArray) validate() error {
+	if len(v.Words) != int(v.NWords) {
+		return errors.New("array length constraint violated")
+	}
+	for idx := 0; idx < len(v.Words); idx++ {
+	}
+	return nil
 }

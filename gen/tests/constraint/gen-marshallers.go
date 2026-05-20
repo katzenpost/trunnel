@@ -56,3 +56,35 @@ func ParseDate(data []byte) (*Date, error) {
 	}
 	return d, nil
 }
+
+func (d *Date) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, d.Year)
+		buf = append(buf, tmp...)
+	}
+	buf = append(buf, byte(d.Month))
+	buf = append(buf, byte(d.Day))
+	return buf
+}
+
+func (d *Date) MarshalBinary() ([]byte, error) {
+	if err := d.validate(); err != nil {
+		return nil, err
+	}
+	return d.encodeBinary(), nil
+}
+
+func (d *Date) validate() error {
+	if !(1970 <= d.Year && d.Year <= 65535) {
+		return errors.New("integer constraint violated")
+	}
+	if !(d.Month == 1 || d.Month == 2 || d.Month == 3 || d.Month == 4 || d.Month == 5 || d.Month == 6 || d.Month == 7 || d.Month == 8 || d.Month == 9 || d.Month == 10 || d.Month == 11 || d.Month == 12) {
+		return errors.New("integer constraint violated")
+	}
+	if !(d.Day == 1 || d.Day == 2 || (3 <= d.Day && d.Day <= 31)) {
+		return errors.New("integer constraint violated")
+	}
+	return nil
+}

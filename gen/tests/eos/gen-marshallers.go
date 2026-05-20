@@ -44,3 +44,29 @@ func ParseFourbytes(data []byte) (*Fourbytes, error) {
 	}
 	return f, nil
 }
+
+func (f *Fourbytes) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, f.X)
+		buf = append(buf, tmp...)
+	}
+	{
+		tmp := make([]byte, 2)
+		binary.BigEndian.PutUint16(tmp, f.Y)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (f *Fourbytes) MarshalBinary() ([]byte, error) {
+	if err := f.validate(); err != nil {
+		return nil, err
+	}
+	return f.encodeBinary(), nil
+}
+
+func (f *Fourbytes) validate() error {
+	return nil
+}

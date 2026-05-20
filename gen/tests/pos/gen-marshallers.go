@@ -56,3 +56,28 @@ func ParseHaspos(data []byte) (*Haspos, error) {
 	}
 	return h, nil
 }
+
+func (h *Haspos) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, []byte(h.S1)...)
+	buf = append(buf, 0)
+	buf = append(buf, []byte(h.S2)...)
+	buf = append(buf, 0)
+	{
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, h.X)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (h *Haspos) MarshalBinary() ([]byte, error) {
+	if err := h.validate(); err != nil {
+		return nil, err
+	}
+	return h.encodeBinary(), nil
+}
+
+func (h *Haspos) validate() error {
+	return nil
+}

@@ -51,6 +51,27 @@ func ParsePoint(data []byte) (*Point, error) {
 	return p, nil
 }
 
+func (p *Point) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(p.X))
+	buf = append(buf, byte(p.Y))
+	return buf
+}
+
+func (p *Point) MarshalBinary() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	return p.encodeBinary(), nil
+}
+
+func (p *Point) validate() error {
+	if !(0 <= p.X && p.X <= 254) {
+		return errors.New("integer constraint violated")
+	}
+	return nil
+}
+
 type Twosize struct {
 	X uint32
 	Y uint16
@@ -108,6 +129,9 @@ func (v *Varsize) Parse(data []byte, count Count) ([]byte, error) {
 		cur = cur[4:]
 	}
 	{
+		if uint64(count.Countval) > uint64(len(cur)) {
+			return nil, errors.New("data too short")
+		}
 		v.Msg = make([]uint8, int(count.Countval))
 		for idx := 0; idx < int(count.Countval); idx++ {
 			if len(cur) < 1 {

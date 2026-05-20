@@ -48,3 +48,27 @@ func ParseNulTerm(data []byte) (*NulTerm, error) {
 	}
 	return n, nil
 }
+
+func (n *NulTerm) encodeBinary() []byte {
+	var buf []byte
+	{
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, n.X)
+		buf = append(buf, tmp...)
+	}
+	buf = append(buf, []byte(n.S)...)
+	buf = append(buf, 0)
+	buf = append(buf, byte(n.Y))
+	return buf
+}
+
+func (n *NulTerm) MarshalBinary() ([]byte, error) {
+	if err := n.validate(); err != nil {
+		return nil, err
+	}
+	return n.encodeBinary(), nil
+}
+
+func (n *NulTerm) validate() error {
+	return nil
+}

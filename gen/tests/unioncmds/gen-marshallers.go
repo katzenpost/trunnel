@@ -59,3 +59,47 @@ func ParseUnionCmds(data []byte) (*UnionCmds, error) {
 	}
 	return u, nil
 }
+
+func (u *UnionCmds) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(u.Tag))
+	switch {
+	case u.Tag == 1:
+	case u.Tag == 2:
+	default:
+		for idx := 0; idx < 2; idx++ {
+			{
+				tmp := make([]byte, 4)
+				binary.BigEndian.PutUint32(tmp, u.X[idx])
+				buf = append(buf, tmp...)
+			}
+		}
+	}
+	{
+		tmp := make([]byte, 4)
+		binary.BigEndian.PutUint32(tmp, u.Y)
+		buf = append(buf, tmp...)
+	}
+	return buf
+}
+
+func (u *UnionCmds) MarshalBinary() ([]byte, error) {
+	if err := u.validate(); err != nil {
+		return nil, err
+	}
+	return u.encodeBinary(), nil
+}
+
+func (u *UnionCmds) validate() error {
+	switch {
+	case u.Tag == 1:
+	case u.Tag == 2:
+	default:
+		if len(u.X) != 2 {
+			return errors.New("array length constraint violated")
+		}
+		for idx := 0; idx < len(u.X); idx++ {
+		}
+	}
+	return nil
+}

@@ -31,3 +31,23 @@ func ParseConstants(data []byte) (*Constants, error) {
 	}
 	return c, nil
 }
+
+func (c *Constants) encodeBinary() []byte {
+	var buf []byte
+	buf = append(buf, byte(c.X))
+	return buf
+}
+
+func (c *Constants) MarshalBinary() ([]byte, error) {
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+	return c.encodeBinary(), nil
+}
+
+func (c *Constants) validate() error {
+	if !(c.X == 42 || c.X == 66 || c.X == 34) {
+		return errors.New("integer constraint violated")
+	}
+	return nil
+}
