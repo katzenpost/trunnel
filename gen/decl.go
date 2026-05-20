@@ -29,6 +29,7 @@ type generator struct {
 
 func (g *generator) files(pkg string, fs []*ast.File) error {
 	g.header(pkg)
+	g.maxParseSize()
 
 	if err := g.init(fs); err != nil {
 		return err
@@ -41,6 +42,24 @@ func (g *generator) files(pkg string, fs []*ast.File) error {
 	}
 
 	return nil
+}
+
+// defaultMaxParseSize is the default value the generator emits for the
+// package-level MaxParseSize variable. 16 MiB is comfortably above any
+// realistic single-message payload while remaining far below the kind of
+// allocation an adversary would use for a memory-exhaustion attack.
+const defaultMaxParseSize = 16 << 20
+
+// maxParseSize emits a package-level MaxParseSize variable that bounds the
+// total input size accepted by the top-level Parse... convenience
+// constructors. The check applies only at the public entry points; nested
+// or in-stream parses via Foo.Parse(data, ...) remain unchecked so that
+// recursive struct refs do not re-validate on every step.
+func (g *generator) maxParseSize() {
+	g.printf("// MaxParseSize bounds the total input size accepted by the\n")
+	g.printf("// top-level Parse... convenience constructors in this package.\n")
+	g.printf("// Adjust before the first parse call to override the default.\n")
+	g.printf("var MaxParseSize = %d\n\n", defaultMaxParseSize)
 }
 
 func (g *generator) init(fs []*ast.File) (err error) {
@@ -130,6 +149,7 @@ func (g *generator) structUnionMemberDecl(m *ast.UnionMember) {
 func (g *generator) parseConstructor(s *ast.Struct) {
 	n := name(s.Name)
 	g.printf("func Parse%s(data []byte%s) (*%s, error) {\n", n, contextSignature(s.Contexts), n)
+	g.printf("if len(data) > MaxParseSize { return nil, errors.New(\"input exceeds MaxParseSize\") }\n")
 	g.printf("%s := new(%s)\n", g.receiver, n)
 	g.printf("_, err := %s.Parse(data%s)\n", g.receiver, contextArgs(s.Contexts))
 	g.printf("if err != nil { return nil, err }\n")
