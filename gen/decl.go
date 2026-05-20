@@ -265,7 +265,17 @@ func (g *generator) parseArray(lhs string, base ast.Type, s ast.LengthConstraint
 		// platforms a u32 length above MaxInt32 (which sign-extends to
 		// a negative int) does not silently pass an int comparison and
 		// then panic in runtime.makeslice.
-		g.printf("if uint64(%s) > uint64(len(%s)) { return nil, errors.New(\"data too short\") }\n", ref, g.data)
+		//
+		// For multi-byte element types the actual allocation is
+		// size*elemBytes; dividing len(cur) by elemBytes keeps the
+		// check tight so the allocation is bounded by len(cur), not by
+		// len(cur)*elemBytes. For single-byte elements (u8/char) the
+		// bound is the same and the simpler form reads better.
+		if eb := elementByteSize(base); eb > 1 {
+			g.printf("if uint64(%s) > uint64(len(%s))/%d { return nil, errors.New(\"data too short\") }\n", ref, g.data, eb)
+		} else {
+			g.printf("if uint64(%s) > uint64(len(%s)) { return nil, errors.New(\"data too short\") }\n", ref, g.data)
+		}
 		size := fmt.Sprintf("int(%s)", ref)
 		g.printf("%s = make([]%s, %s)\n", lhs, g.tipe(base), size)
 		g.printf("for idx := 0; idx < %s; idx++ {\n", size)
@@ -354,6 +364,22 @@ func (g *generator) lengthCheck(min string) {
 
 func (g *generator) assertEnd() {
 	g.printf("if len(%s) > 0 { return nil, errors.New(\"trailing data disallowed\") }\n", g.data)
+}
+
+// elementByteSize returns the byte size of a single element of base, used
+// by parseArray to bound the allocation tightly against the remaining
+// input. For variable-sized members (struct refs and the like) we
+// conservatively return 1, which still bounds the allocation by
+// O(len(cur)) without claiming a tighter ratio than we can prove.
+func elementByteSize(base ast.Type) int {
+	switch t := base.(type) {
+	case *ast.IntType:
+		return int(t.Size) / 8
+	case *ast.CharType:
+		return 1
+	default:
+		return 1
+	}
 }
 
 func (g *generator) integer(i ast.Integer) string {

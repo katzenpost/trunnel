@@ -27,7 +27,7 @@ func (v *VarArray) Parse(data []byte) ([]byte, error) {
 		cur = cur[2:]
 	}
 	{
-		if uint64(v.NWords) > uint64(len(cur)) {
+		if uint64(v.NWords) > uint64(len(cur))/4 {
 			return nil, errors.New("data too short")
 		}
 		v.Words = make([]uint32, int(v.NWords))
