@@ -226,7 +226,17 @@ func (g *generator) parseArray(lhs string, base ast.Type, s ast.LengthConstraint
 		g.printf("}\n")
 
 	case *ast.IDRef:
-		size := fmt.Sprintf("int(%s)", g.ref(s))
+		ref := g.ref(s)
+		// Bound the allocation by the remaining input before make. The
+		// length field is attacker-controlled and may be a u32 holding
+		// a value far larger than len(cur); without this check, the
+		// make() runs first and can be coerced into a multi-gigabyte
+		// allocation. The comparison is unsigned so that on 32-bit
+		// platforms a u32 length above MaxInt32 (which sign-extends to
+		// a negative int) does not silently pass an int comparison and
+		// then panic in runtime.makeslice.
+		g.printf("if uint64(%s) > uint64(len(%s)) { return nil, errors.New(\"data too short\") }\n", ref, g.data)
+		size := fmt.Sprintf("int(%s)", ref)
 		g.printf("%s = make([]%s, %s)\n", lhs, g.tipe(base), size)
 		g.printf("for idx := 0; idx < %s; idx++ {\n", size)
 		g.parseType(lhs+"[idx]", base)
