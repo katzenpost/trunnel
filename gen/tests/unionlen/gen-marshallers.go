@@ -97,16 +97,9 @@ func (u *UnionWithLen) Parse(data []byte) ([]byte, error) {
 			}
 		default:
 			{
-				u.Unparseable = make([]uint8, 0)
-				for len(cur) > 0 {
-					var tmp uint8
-					if len(cur) < 1 {
-						return nil, errors.New("data too short")
-					}
-					tmp = cur[0]
-					cur = cur[1:]
-					u.Unparseable = append(u.Unparseable, tmp)
-				}
+				u.Unparseable = make([]uint8, len(cur))
+				copy(u.Unparseable, cur)
+				cur = cur[len(cur):]
 			}
 		}
 		if len(cur) > 0 {
@@ -162,9 +155,7 @@ func (u *UnionWithLen) encodeBinary() []byte {
 		buf = append(buf, byte(u.Month))
 		buf = append(buf, byte(u.Day))
 	default:
-		for idx := 0; idx < len(u.Unparseable); idx++ {
-			buf = append(buf, byte(u.Unparseable[idx]))
-		}
+		buf = append(buf, u.Unparseable...)
 	}
 	{
 		tmp := make([]byte, 2)
@@ -186,8 +177,6 @@ func (u *UnionWithLen) validate() error {
 	case u.Tag == 1:
 	case u.Tag == 2:
 	default:
-		for idx := 0; idx < len(u.Unparseable); idx++ {
-		}
 	}
 	return nil
 }

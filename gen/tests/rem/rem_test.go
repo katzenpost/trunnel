@@ -54,3 +54,12 @@ func TestRemParseSuccess(t *testing.T) {
 		Tail: []byte("thetail"),
 	}, r)
 }
+
+func TestRemParseCopiesTail(t *testing.T) {
+	b := []byte{0, 1, 2, 3, 4, 5, 6}
+	r, err := ParseRem(b)
+	require.NoError(t, err)
+
+	b[4] = 99
+	assert.Equal(t, []byte{4, 5, 6}, r.Tail)
+}

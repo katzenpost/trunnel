@@ -144,13 +144,8 @@ func (v *Varsize) Parse(data []byte, count Count) ([]byte, error) {
 			return nil, errors.New("data too short")
 		}
 		v.Msg = make([]uint8, int(count.Countval))
-		for idx := 0; idx < int(count.Countval); idx++ {
-			if len(cur) < 1 {
-				return nil, errors.New("data too short")
-			}
-			v.Msg[idx] = cur[0]
-			cur = cur[1:]
-		}
+		copy(v.Msg, cur[:int(count.Countval)])
+		cur = cur[int(count.Countval):]
 	}
 	return cur, nil
 }
@@ -210,16 +205,9 @@ func (c *Ccomplex) Parse(data []byte, flag Flag, count Count) ([]byte, error) {
 		switch {
 		case flag.Flagval == 0:
 			{
-				c.A = make([]uint8, 0)
-				for len(cur) > 0 {
-					var tmp uint8
-					if len(cur) < 1 {
-						return nil, errors.New("data too short")
-					}
-					tmp = cur[0]
-					cur = cur[1:]
-					c.A = append(c.A, tmp)
-				}
+				c.A = make([]uint8, len(cur))
+				copy(c.A, cur)
+				cur = cur[len(cur):]
 			}
 		case flag.Flagval == 1:
 			{
