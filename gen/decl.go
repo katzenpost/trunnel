@@ -249,6 +249,30 @@ func (g *generator) parseIntType(lhs string, t *ast.IntType) {
 }
 
 func (g *generator) parseArray(lhs string, base ast.Type, s ast.LengthConstraint) {
+	if unconstrainedByteType(base) {
+		switch s := s.(type) {
+		case *ast.IntegerConstRef, *ast.IntegerLiteral:
+			size := g.integer(s)
+			g.lengthCheck(size)
+			g.printf("copy(%s[:], %s[:%s])\n", lhs, g.data, size)
+			g.printf("%s = %s[%s:]\n", g.data, g.data, size)
+			return
+		case *ast.IDRef:
+			ref := g.ref(s)
+			g.printf("if uint64(%s) > uint64(len(%s)) { return nil, errors.New(\"data too short\") }\n", ref, g.data)
+			size := fmt.Sprintf("int(%s)", ref)
+			g.printf("%s = make([]%s, %s)\n", lhs, g.tipe(base), size)
+			g.printf("copy(%s, %s[:%s])\n", lhs, g.data, size)
+			g.printf("%s = %s[%s:]\n", g.data, g.data, size)
+			return
+		case nil:
+			g.printf("%s = make([]%s, len(%s))\n", lhs, g.tipe(base), g.data)
+			g.printf("copy(%s, %s)\n", lhs, g.data)
+			g.printf("%s = %s[len(%s):]\n", g.data, g.data, g.data)
+			return
+		}
+	}
+
 	switch s := s.(type) {
 	case *ast.IntegerConstRef, *ast.IntegerLiteral:
 		g.printf("for idx := 0; idx < %s; idx++ {\n", g.integer(s))
@@ -379,6 +403,19 @@ func elementByteSize(base ast.Type) int {
 		return 1
 	default:
 		return 1
+	}
+}
+
+// unconstrainedByteType reports whether base can be copied without skipping
+// per-element validation.
+func unconstrainedByteType(base ast.Type) bool {
+	switch t := base.(type) {
+	case *ast.IntType:
+		return t.Size == 8 && t.Constraint == nil
+	case *ast.CharType:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -537,6 +574,16 @@ func (g *generator) encodeIntType(rhs string, t *ast.IntType) {
 }
 
 func (g *generator) encodeArray(rhs string, base ast.Type, s ast.LengthConstraint) {
+	if unconstrainedByteType(base) {
+		switch s.(type) {
+		case *ast.IntegerConstRef, *ast.IntegerLiteral:
+			g.printf("%s = append(%s, %s[:]...)\n", g.data, g.data, rhs)
+		default:
+			g.printf("%s = append(%s, %s...)\n", g.data, g.data, rhs)
+		}
+		return
+	}
+
 	switch s := s.(type) {
 	case *ast.IntegerConstRef, *ast.IntegerLiteral:
 		g.printf("for idx := 0; idx < %s; idx++ {\n", g.integer(s))
@@ -660,6 +707,10 @@ func (g *generator) validateArray(rhs string, base ast.Type, s ast.LengthConstra
 
 	default:
 		panic(unexpected(s))
+	}
+
+	if unconstrainedByteType(base) {
+		return
 	}
 
 	// Validate array elements

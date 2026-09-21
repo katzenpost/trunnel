@@ -11,13 +11,11 @@ type IRecv struct {
 func (i *IRecv) Parse(data []byte) ([]byte, error) {
 	cur := data
 	{
-		for idx := 0; idx < 8; idx++ {
-			if len(cur) < 1 {
-				return nil, errors.New("data too short")
-			}
-			i.Bytes[idx] = cur[0]
-			cur = cur[1:]
+		if len(cur) < 8 {
+			return nil, errors.New("data too short")
 		}
+		copy(i.Bytes[:], cur[:8])
+		cur = cur[8:]
 	}
 	return cur, nil
 }
@@ -33,9 +31,7 @@ func ParseIRecv(data []byte) (*IRecv, error) {
 
 func (i *IRecv) encodeBinary() []byte {
 	var buf []byte
-	for idx := 0; idx < 8; idx++ {
-		buf = append(buf, byte(i.Bytes[idx]))
-	}
+	buf = append(buf, i.Bytes[:]...)
 	return buf
 }
 
@@ -49,8 +45,6 @@ func (i *IRecv) MarshalBinary() ([]byte, error) {
 func (i *IRecv) validate() error {
 	if len(i.Bytes) != 8 {
 		return errors.New("array length constraint violated")
-	}
-	for idx := 0; idx < len(i.Bytes); idx++ {
 	}
 	return nil
 }

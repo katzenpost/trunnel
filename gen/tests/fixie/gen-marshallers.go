@@ -87,22 +87,18 @@ type FixieDemo struct {
 func (f *FixieDemo) Parse(data []byte) ([]byte, error) {
 	cur := data
 	{
-		for idx := 0; idx < 8; idx++ {
-			if len(cur) < 1 {
-				return nil, errors.New("data too short")
-			}
-			f.Bytes[idx] = cur[0]
-			cur = cur[1:]
+		if len(cur) < 8 {
+			return nil, errors.New("data too short")
 		}
+		copy(f.Bytes[:], cur[:8])
+		cur = cur[8:]
 	}
 	{
-		for idx := 0; idx < 8; idx++ {
-			if len(cur) < 1 {
-				return nil, errors.New("data too short")
-			}
-			f.Letters[idx] = cur[0]
-			cur = cur[1:]
+		if len(cur) < 8 {
+			return nil, errors.New("data too short")
 		}
+		copy(f.Letters[:], cur[:8])
+		cur = cur[8:]
 	}
 	{
 		for idx := 0; idx < 4; idx++ {
@@ -158,12 +154,8 @@ func ParseFixieDemo(data []byte) (*FixieDemo, error) {
 
 func (f *FixieDemo) encodeBinary() []byte {
 	var buf []byte
-	for idx := 0; idx < 8; idx++ {
-		buf = append(buf, byte(f.Bytes[idx]))
-	}
-	for idx := 0; idx < 8; idx++ {
-		buf = append(buf, byte(f.Letters[idx]))
-	}
+	buf = append(buf, f.Bytes[:]...)
+	buf = append(buf, f.Letters[:]...)
 	for idx := 0; idx < 4; idx++ {
 		{
 			tmp := make([]byte, 2)
@@ -204,12 +196,8 @@ func (f *FixieDemo) validate() error {
 	if len(f.Bytes) != 8 {
 		return errors.New("array length constraint violated")
 	}
-	for idx := 0; idx < len(f.Bytes); idx++ {
-	}
 	if len(f.Letters) != 8 {
 		return errors.New("array length constraint violated")
-	}
-	for idx := 0; idx < len(f.Letters); idx++ {
 	}
 	if len(f.Shortwords) != 4 {
 		return errors.New("array length constraint violated")

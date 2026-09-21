@@ -27,16 +27,9 @@ func (r *Rem) Parse(data []byte) ([]byte, error) {
 		cur = cur[4:]
 	}
 	{
-		r.Tail = make([]uint8, 0)
-		for len(cur) > 0 {
-			var tmp uint8
-			if len(cur) < 1 {
-				return nil, errors.New("data too short")
-			}
-			tmp = cur[0]
-			cur = cur[1:]
-			r.Tail = append(r.Tail, tmp)
-		}
+		r.Tail = make([]uint8, len(cur))
+		copy(r.Tail, cur)
+		cur = cur[len(cur):]
 	}
 	return cur, nil
 }
@@ -60,9 +53,7 @@ func (r *Rem) encodeBinary() []byte {
 		binary.BigEndian.PutUint32(tmp, r.Head)
 		buf = append(buf, tmp...)
 	}
-	for idx := 0; idx < len(r.Tail); idx++ {
-		buf = append(buf, byte(r.Tail[idx]))
-	}
+	buf = append(buf, r.Tail...)
 	return buf
 }
 
@@ -74,7 +65,5 @@ func (r *Rem) MarshalBinary() ([]byte, error) {
 }
 
 func (r *Rem) validate() error {
-	for idx := 0; idx < len(r.Tail); idx++ {
-	}
 	return nil
 }

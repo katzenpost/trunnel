@@ -48,16 +48,9 @@ func (u *Unlo) Parse(data []byte) ([]byte, error) {
 			}
 		case u.Tag == 2:
 			{
-				u.Y = make([]uint8, 0)
-				for len(cur) > 0 {
-					var tmp uint8
-					if len(cur) < 1 {
-						return nil, errors.New("data too short")
-					}
-					tmp = cur[0]
-					cur = cur[1:]
-					u.Y = append(u.Y, tmp)
-				}
+				u.Y = make([]uint8, len(cur))
+				copy(u.Y, cur)
+				cur = cur[len(cur):]
 			}
 		case u.Tag == 4:
 			{
@@ -97,13 +90,8 @@ func (u *Unlo) Parse(data []byte) ([]byte, error) {
 			return nil, errors.New("data too short")
 		}
 		u.Leftovers = make([]uint8, int(u.Leftoverlen))
-		for idx := 0; idx < int(u.Leftoverlen); idx++ {
-			if len(cur) < 1 {
-				return nil, errors.New("data too short")
-			}
-			u.Leftovers[idx] = cur[0]
-			cur = cur[1:]
-		}
+		copy(u.Leftovers, cur[:int(u.Leftoverlen)])
+		cur = cur[int(u.Leftoverlen):]
 	}
 	return cur, nil
 }
@@ -127,9 +115,7 @@ func (u *Unlo) encodeBinary() []byte {
 	case u.Tag == 1:
 		buf = append(buf, byte(u.X))
 	case u.Tag == 2:
-		for idx := 0; idx < len(u.Y); idx++ {
-			buf = append(buf, byte(u.Y[idx]))
-		}
+		buf = append(buf, u.Y...)
 	case u.Tag == 4:
 		buf = append(buf, byte(u.Byte))
 		for idx := 0; idx < len(u.Z); idx++ {
@@ -141,9 +127,7 @@ func (u *Unlo) encodeBinary() []byte {
 		}
 	}
 	buf = append(buf, byte(u.Leftoverlen))
-	for idx := 0; idx < int(u.Leftoverlen); idx++ {
-		buf = append(buf, byte(u.Leftovers[idx]))
-	}
+	buf = append(buf, u.Leftovers...)
 	return buf
 }
 
@@ -158,16 +142,12 @@ func (u *Unlo) validate() error {
 	switch {
 	case u.Tag == 1:
 	case u.Tag == 2:
-		for idx := 0; idx < len(u.Y); idx++ {
-		}
 	case u.Tag == 4:
 		for idx := 0; idx < len(u.Z); idx++ {
 		}
 	}
 	if len(u.Leftovers) != int(u.Leftoverlen) {
 		return errors.New("array length constraint violated")
-	}
-	for idx := 0; idx < len(u.Leftovers); idx++ {
 	}
 	return nil
 }

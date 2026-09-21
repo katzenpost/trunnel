@@ -121,13 +121,11 @@ func (b *Basic) Parse(data []byte) ([]byte, error) {
 			}
 		case b.Tag == 4:
 			{
-				for idx := 0; idx < 8; idx++ {
-					if len(cur) < 1 {
-						return nil, errors.New("data too short")
-					}
-					b.Eightbytes[idx] = cur[0]
-					cur = cur[1:]
+				if len(cur) < 8 {
+					return nil, errors.New("data too short")
 				}
+				copy(b.Eightbytes[:], cur[:8])
+				cur = cur[8:]
 			}
 		case b.Tag == 6:
 			{
@@ -169,9 +167,7 @@ func (b *Basic) encodeBinary() []byte {
 			buf = append(buf, tmp...)
 		}
 	case b.Tag == 4:
-		for idx := 0; idx < 8; idx++ {
-			buf = append(buf, byte(b.Eightbytes[idx]))
-		}
+		buf = append(buf, b.Eightbytes[:]...)
 	case b.Tag == 6:
 		buf = append(buf, []byte(b.String)...)
 		buf = append(buf, 0)
@@ -201,8 +197,6 @@ func (b *Basic) validate() error {
 	case b.Tag == 4:
 		if len(b.Eightbytes) != 8 {
 			return errors.New("array length constraint violated")
-		}
-		for idx := 0; idx < len(b.Eightbytes); idx++ {
 		}
 	case b.Tag == 6:
 	}
